@@ -1,13 +1,17 @@
 import React, {Component} from 'react'
 import {PROXY_URL} from '../constants'
+import {connect} from 'react-redux';
+import {getTodaysGames, weLoading} from '../redux/actions'
 
 class Games extends Component {
     state = {
         games: [],
         date: '',
-        months: [ "January", "February", "March", "April", "May", "June", 
-        "July", "August", "September", "October", "November", "December" ]
+        loading: true
     }
+
+    months = [ "January", "February", "March", "April", "May", "June", 
+    "July", "August", "September", "October", "November", "December" ]
 
     componentDidMount() {
         const today = new Date();
@@ -15,15 +19,33 @@ class Games extends Component {
         const mm = String(today.getMonth() + 1).padStart(2, '0');
         const yyyy = today.getFullYear();
         const currentDate = `${yyyy}${mm}${dd}`
-        fetch(PROXY_URL + `http://data.nba.net/data/10s/prod/v1/${currentDate}/scoreboard.json`)
+
+        this.props.callGetGames(currentDate)
+    }
+
+    changeGames = (date) => {
+        this.setState({
+            loading: true
+        })
+        fetch(PROXY_URL + `http://data.nba.net/data/10s/prod/v1/${date}/scoreboard.json`)
         .then(resp => resp.json())
         .then(json => {
+            let newGames = null
+            if(json.games !== []){
+                newGames = json.games
+            }
             console.log(json.games)
             this.setState({
-                games: json.games,
-                date: currentDate
+                games: newGames,
+                date: date,
+                loading: false
             })
         })
+        .catch(err => this.setState({
+            games: null,
+            date: date,
+            loading: false
+        }))
     }
 
     renderDateForm = () => {
@@ -33,9 +55,14 @@ class Games extends Component {
             </form>
         )
     }
+    
+    handleChange = (event) => {
+        this.props.timeToLoad()
+        this.props.callGetGames(event.target.value.split('-').join(''))
+    }
 
     renderGames = () => {
-        const cards = this.state.games.map(game => {
+        const cards = this.props.games.map(game => {
             return(
                 <div class="card">
                     <div class="content">
@@ -59,19 +86,44 @@ class Games extends Component {
     render() {
         return(
             <div>
-                {this.state.games.length === 0
+                {this.props.loading
                 ?
-                <h2>Loading.......</h2>
+                <h1>Loading........</h1>
                 :
-                <div>
-                    <h1>Games for {this.state.months[this.state.date.slice(4, 6) - 1]} {this.state.date.slice(6, 8)}, {this.state.date.slice(0, 4)}</h1>
-                    {this.renderDateForm()}
-                    {this.renderGames()}
-                </div>
+                    this.props.games === undefined
+                    ?
+                    <div>
+                        <h1>Games for {this.months[this.props.date.slice(4, 6) - 1]} {this.props.date.slice(6, 8)}, {this.props.date.slice(0, 4)}</h1>
+                        {this.renderDateForm()}
+                        <h1>No games on this date</h1>
+                    </div>
+                    :
+                    <div>
+                        <h1>Games for {this.months[this.props.date.slice(4, 6) - 1]} {this.props.date.slice(6, 8)}, {this.props.date.slice(0, 4)}</h1>
+                        {this.renderDateForm()}
+                        {this.props.games == null
+                        ?
+                        <h1>No games on this date</h1>
+                        :
+                        this.renderGames()
+                        }              
+                    </div>
                 }
             </div>
         )
     }
 }
 
-export default Games
+const mapStateToProps = state => {
+    return {
+        loading: state.loading,
+        games: state.games,
+        date: state.date
+    }
+}
+
+const mapDispatchToProps = dispatch => {
+    return {callGetGames: (date) => dispatch(getTodaysGames(date)), timeToLoad: () => dispatch(weLoading())}
+}
+
+export default connect(mapStateToProps, mapDispatchToProps)(Games)

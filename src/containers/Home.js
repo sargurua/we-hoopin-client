@@ -6,6 +6,7 @@ import {
 } from "react-router-dom";
 import HomePage from '../components/HomePage'
 import Games from '../components/Games'
+import Players from '../components/Players'
 
 class Home extends Component {
     constructor(){
@@ -16,16 +17,6 @@ class Home extends Component {
     }
 
     componentDidMount(){
-    const proxyurl = "https://cors-anywhere.herokuapp.com/";
-    const url = "http://data.nba.net/data/10s/prod/v1/current/standings_all.json"
-    fetch(proxyurl + url)
-    .then(resp => resp.json())
-    .then(json => {
-        console.log(json.league.standard.teams)
-        this.setState({
-        teams: json.league.standard.teams
-        })
-    })
     }
 
     handleClick = e => {
@@ -51,6 +42,9 @@ class Home extends Component {
                     </Route>
                     <Route exact path="/standings">
                         <TeamList teams={this.state.teams}/>
+                    </Route>
+                    <Route exact path="/players">
+                        <Players />
                     </Route>
             </div>
         )
