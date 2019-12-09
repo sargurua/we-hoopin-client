@@ -1,7 +1,9 @@
 import React, {Component} from 'react'
 import {PROXY_URL} from '../constants'
 import {connect} from 'react-redux';
+import {withRouter} from 'react-router-dom'
 import {getTodaysGames, weLoading} from '../redux/actions'
+import BestPerformances from './BestPerformances'
 
 class Games extends Component {
     state = {
@@ -9,11 +11,14 @@ class Games extends Component {
         date: '',
         loading: true
     }
+    suffixes = ['','st','nd','rd','th','th','th','th','th','th','th','th','th'];
 
     months = [ "January", "February", "March", "April", "May", "June", 
     "July", "August", "September", "October", "November", "December" ]
 
     componentDidMount() {
+        this.props.timeToLoad()
+
         const today = new Date();
         const dd = String(today.getDate()).padStart(2, '0');
         const mm = String(today.getMonth() + 1).padStart(2, '0');
@@ -34,7 +39,6 @@ class Games extends Component {
             if(json.games !== []){
                 newGames = json.games
             }
-            console.log(json.games)
             this.setState({
                 games: newGames,
                 date: date,
@@ -63,22 +67,40 @@ class Games extends Component {
 
     renderGames = () => {
         const cards = this.props.games.map(game => {
+
             return(
-                <div class="card">
-                    <div class="content">
-                        <div class="header">{game.vTeam.triCode} ({game.vTeam.win} - {game.vTeam.loss}) @ {game.hTeam.triCode} ({game.hTeam.win} - {game.hTeam.loss})</div>
-                        <div class="meta">Friend</div>
-                        <div class="description">
-                            Elliot Fu is a film-maker from New York.
+                game.vTeam.score
+                    ?
+                    <div style={{backgroundColor: 'rgb(234, 255, 255)', width: '400px'}} class="card" onClick={() => this.props.history.push(`/games/${this.props.date}/${game.gameId}`)}>
+                        <div class="content">
+                        <div class="header">{game.vTeam.triCode} ({game.vTeam.win} - {game.vTeam.loss}) {game.vTeam.score}</div>
+                            <div class='header'>{game.hTeam.triCode} ({game.hTeam.win} - {game.hTeam.loss}) {game.hTeam.score}</div>
+                            {!game.isGameActivated && game.period.current >= 4
+                            ?
+                            <div class="meta" style={{color: "red"}}>Final</div>
+                            :
+                            <div class="meta" style={{color: "red"}}>{game.period.current + this.suffixes[parseInt(game.period.current)]} {game.clock == "" ? "0:00" : game.clock}</div>
+                            }        
                         </div>
                     </div>
-                </div>
+                    :
+                    <div style={{backgroundColor: 'rgb(234, 255, 255)', width: '400px'}} class="card" onClick={() => this.props.history.push(`/games/${this.props.date}/${game.gameId}`)}>
+                        <div class="content">
+                            <div class="header">{game.vTeam.triCode} ({game.vTeam.win} - {game.vTeam.loss})</div>
+                            <div class='header'>{game.hTeam.triCode} ({game.hTeam.win} - {game.hTeam.loss})</div>
+                            <div class="meta">{game.startTimeEastern}</div>
+                        </div>
+                    </div>
             )
         })
 
         return (
-            <div className="ui center cards" id="games"> 
-                {cards}
+            <div>
+                <div className="ui center cards" id="games"> 
+                    {cards}
+                </div>
+                {
+                }
             </div>
         )
     }
@@ -86,26 +108,38 @@ class Games extends Component {
     render() {
         return(
             <div>
-                {this.props.loading
+                {this.props.games == undefined || this.props.date == undefined
                 ?
-                <h1>Loading........</h1>
+                <img src="https://gifimage.net/wp-content/uploads/2018/04/loading-gif-orange-4.gif"/>
                 :
-                    this.props.games === undefined
+                    (this.props.games === undefined)
                     ?
                     <div>
-                        <h1>Games for {this.months[this.props.date.slice(4, 6) - 1]} {this.props.date.slice(6, 8)}, {this.props.date.slice(0, 4)}</h1>
-                        {this.renderDateForm()}
-                        <h1>No games on this date</h1>
+                        {this.props.date !== undefined
+                        ?
+                        <div>
+                            <h1 style={{textDecoration: 'underline'}}>Games for {this.months[this.props.date.slice(4, 6) - 1]} {this.props.date.slice(6, 8)}, {this.props.date.slice(0, 4)}</h1>
+                            <div>
+                            { this.renderDateForm()}
+                            </div>
+                            <h1>No games on this date</h1>
+                        </div>
+                        :
+                        null
+                        }
+
                     </div>
                     :
                     <div>
-                        <h1>Games for {this.months[this.props.date.slice(4, 6) - 1]} {this.props.date.slice(6, 8)}, {this.props.date.slice(0, 4)}</h1>
+                        <h1 style={{textDecoration: 'underline'}}>Games for {this.months[this.props.date.slice(4, 6) - 1]} {this.props.date.slice(6, 8)}, {this.props.date.slice(0, 4)}</h1>
                         {this.renderDateForm()}
                         {this.props.games == null
                         ?
                         <h1>No games on this date</h1>
                         :
-                        this.renderGames()
+                        <div style={{display: 'flex'}}>
+                            {this.renderGames()}
+                        </div>
                         }              
                     </div>
                 }
@@ -126,4 +160,4 @@ const mapDispatchToProps = dispatch => {
     return {callGetGames: (date) => dispatch(getTodaysGames(date)), timeToLoad: () => dispatch(weLoading())}
 }
 
-export default connect(mapStateToProps, mapDispatchToProps)(Games)
+export default connect(mapStateToProps, mapDispatchToProps)(withRouter(Games))

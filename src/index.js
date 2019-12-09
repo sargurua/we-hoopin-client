@@ -8,6 +8,7 @@ import rootReducer from './redux/reducers'
 import App from './App';
 import * as serviceWorker from './serviceWorker';
 import {composeWithDevTools} from 'redux-devtools-extension'
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 const composeEnhancers = composeWithDevTools(applyMiddleware(thunk))
 
